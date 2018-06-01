@@ -1,0 +1,10 @@
+import Datastore from 'nedb'
+import path from 'path'
+import { remote } from 'electron'
+
+export default({
+    preferences:new Datastore({
+        autoload:true,
+        filename:path.join(remote.app.getPath('userData'),'preferences.db')
+    })
+})

@@ -1,0 +1,245 @@
+/**
+ * General
+ */
+html, body, #app {
+  background: #222222;
+}
+.btn-success {
+  background: #5cb85c !important;
+  border: none !important;
+  color: white !important;
+}
+.btn-success:hover {
+  background: #4ba74b !important;
+}
+.btn-default {
+  background: #7F7F7F !important;
+  color: white !important;
+  border: none !important;
+}
+.btn-default:hover {
+  background: #1d3d3d !important;
+}
+.btn-info {
+  background: #5bc0de !important;
+  color: white !important;
+  border: none !important;
+}
+.btn-info:hover {
+  background: #19a0bd !important;
+}
+.btn-danger {
+  background: #8B0000 !important;
+  color: white !important;
+  border: none !important;
+}
+.btn-danger:hover {
+  background: #660000 !important;
+}
+.fa {
+  color: white;
+}
+input {
+  background: #000000 !important;
+  border: #555555 !important;
+  color: #cccccc !important;
+}
+select {
+  background: black !important;
+  color: #aaaaaa !important;
+}
+textarea {
+  background: black !important;
+  color: #aaaaaa !important;
+}
+.table-striped>tbody>tr:nth-child(odd)>td,
+.table-striped>tbody>tr:nth-child(odd)>th {
+	background-color: #111111;
+}
+
+
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #444444;
+}
+
+
+/**
+ * About Modal
+ */
+ #about a, #about a:hover, #about a:active, #about a:visited {
+  color: #cccccc;
+}
+
+#about .modal {
+  border: 1px solid white;
+}
+
+#about .modal-content .modal-header {
+  color: #bbbbbb;
+  background: #444444;
+  border-bottom: 1px solid #777777;
+}
+
+#about .modal-content .modal-body {
+  color: #bbbbbb;
+  background: #444444;
+}
+
+
+/**
+ * Alert Box
+ */
+ #alertBox {
+  color: #dddddd;
+  background: #222222;
+  border-bottom: 1px solid #5bc0de;
+  box-shadow: 0px 5px 5px #000000;
+}
+#dismissAlert {
+  background: #5bc0de;
+  color: white;
+}
+#alertBox .form-control, #alertBox .form-control:focus {
+  background: #444444;
+  color: #aaaaaa;
+}
+#alertBox .error {
+  color: red !important;
+}
+
+/**
+ * Left Menu
+ */
+ #left-menu {
+  background: #444444;
+}
+
+/**
+ * Main View
+ */
+ #mainView {
+  background: #222222;
+  color: #aaaaaa;
+}
+#mainView #tabs {
+  border-left: 1px solid #000000;
+  border-bottom: none !important;
+}
+#mainView .tabs-background {
+  background: #444444;
+}
+.nav-tabs>li>a {
+  background-color: #555555;
+  color:#fff;
+}
+.nav-tabs>li>a:hover i{
+  color: white;
+}
+.nav-tabs > li > a.active{
+  background: #222222 !important;
+  color: #aaaaaa !important;
+}
+
+/**
+ * Org Menu
+ */
+#leftMenuExpanded {
+  background: #333333;
+  color: white;
+}
+
+#leftMenuExpanded .header {
+  background: #333333;
+}
+
+#leftMenuExpanded .select {
+  background: #444444;
+}
+
+#leftMenuExpanded #orgSettings {
+  border-bottom: 1px solid #cccccc;
+}
+
+#leftMenuExpanded .cloudServiceContent div:hover {
+  background: black;
+}
+
+/**
+ * Aws Region
+ */
+#cloudTable tbody:nth-child(odd) {
+  background: #333333 !important;
+}
+#cloudTable tbody {
+  border-bottom: 1px solid #555555;
+}
+#cloudTable tr th {
+  background: #111111;
+}
+#cloudSettingsHeader th {
+  background: #222222 !important;
+  border-bottom: 1px solid #555555;
+}
+
+/**
+ * What's New
+ */
+#whatsnew {
+  background: #222222;
+}
+#whatsnew .versionwrapper {
+  box-shadow: 4px 4px 8px #000;
+  border: 1px solid #666666;
+}
+
+/**
+ * Org Settings
+ */
+#orgSettings .cloudBordered {
+  box-shadow: 4px 4px 8px #000;
+  border: 1px solid #666666;
+}
+#orgSettings .cloudKeys {
+  background: #444444;
+}
+#orgSettings .cloudConfig {
+  background: #444444;
+}
+#orgSettings .keystable {
+  border-top: 1px solid #888888;
+}
+
+/**
+ * SSH Connection
+ */
+#serverInfo {
+  background: #222222;
+  color: #666666 !important;
+ }
+ .terminal {
+  background-color: #000;
+  color: #fff;
+}
+.terminal:not(.focus) .terminal-cursor {
+  outline: 1px solid #fff;
+}
+
+.terminal.xterm-cursor-style-block.focus:not(.xterm-cursor-blink-on) .terminal-cursor {
+  background-color: #fff;
+  color: #000;
+}
+
+.terminal.focus.xterm-cursor-style-bar:not(.xterm-cursor-blink-on) .terminal-cursor::before,
+.terminal.focus.xterm-cursor-style-underline:not(.xterm-cursor-blink-on) .terminal-cursor::before {
+  background-color: #fff;
+}
+
+.terminal .composition-view {
+  background: #000;
+  color: #FFF;
+}
+
+.terminal .xterm-viewport {
+  /* On OS X this is required in order for the scroll bar to appear fully opaque */
+  background-color: #000;
+}
