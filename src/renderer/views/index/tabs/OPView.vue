@@ -91,6 +91,18 @@
         </div>   
         <div class="labelDiv">
             <label class="col-sm col-form-label titleLab">
+                安卓平台：高级
+            </label>
+            <div class="line2">
+            </div>
+        </div>
+        <div class='infoDiv'>
+            <div class="infoTable">
+              <a href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
+            </div>
+        </div>
+        <div class="labelDiv">
+            <label class="col-sm col-form-label titleLab">
                 日志信息
             </label>
             <div class="line2">
@@ -105,7 +117,7 @@
 <script>
 import { getFolder, readFolder, getFileInfo } from "../../../common/file"
 import { execCMD } from "../../../common/cmd"
-import MyImage  from "../../../components/MyImage"
+import MyImage  from "../../comps/MyImage"
 import global_ from "../../../Global"
 import Vue from "vue"
 import APKManifest from "../../../common/manifest/APKManifest"
@@ -122,6 +134,7 @@ const xml2js = require("xml2js")
 const os = require("os")
 const sizeOf = require("image-size")
 const shell = require("electron").shell;
+const BrowserWindow = require('electron').remote.BrowserWindow
 export default {
   name: "opView",
   data: function() {
@@ -1028,6 +1041,19 @@ export default {
             resolve()
           });
       });
+    },
+    modifyManifestXMLHandler(){
+      const winURL = process.env.NODE_ENV === 'development' ?
+    `http://localhost:9080/#xmleditor` :
+    `file://${__dirname}/index.html#xmleditor`
+      let win = new BrowserWindow({ width: 800, height: 620 ,title:"Manifest.xml编辑器"})
+      win.on('close', function () { win = null })
+      win.loadURL(winURL)
+      win.on('page-title-updated', function(){
+          console.log("show............");
+        win.setTitle("Manifest.xml编辑器")
+      })
+      win.show();
     }
   }
 }

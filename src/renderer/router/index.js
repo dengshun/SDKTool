@@ -4,15 +4,19 @@ import Router from 'vue-router'
 Vue.use(Router)
 
 export default new Router({
-  routes: [
-    {
-      path: '/',
-      name: 'landing-page',
-      component: require('@/views/index/index').default
-    },
-    {
-      path: '*',
-      redirect: '/'
-    }
-  ]
+    routes: [{
+            path: '/',
+            name: 'indexPage',
+            component: require('@/views/index/index').default
+        },
+        {
+            path: '/xmleditor',
+            name: "XMLEditor",
+            component: require('@/views/xmlEditor/XMLEditor').default
+        },
+        {
+            path: '*',
+            redirect: '/'
+        }
+    ]
 })
