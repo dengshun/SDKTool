@@ -1,25 +1,55 @@
 <style>
 html {
-  overflow-x:hidden;
-  overflow-y:hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
-.topBox{
-    display: flex;
-    flex-wrap: nowrap;
+.topBox {
+  display: flex;
+  flex-wrap: nowrap;
 }
-.box1{
-  width: 70%;
+.box1 {
+  width: 100%;
   height: 100vh;
-  overflow:auto;
+  overflow: auto;
 }
+.div1{
+  margin: 20px 0px 0px 5px;
+  width: 100%;
+}
+.hDiv2 {
+  margin: 0px 0px 10px 0px;
+}
+.hDiv2 label{
+  color: blue;
+  width: 200px;
+  height: 20px;
+  text-align: left;
+}
+.hDiv2 input{
+  width: 100%;
+}
+.saveBtn {
+  width: 200px;
+  margin: 20px 0px 0px 17px;
+}
+.saveBtn:focus,.saveBtn:active:focus,.saveBtn.active:focus,.saveBtn.focus,.saveBtn:active.focus,.saveBtn.active.focus{    
+  outline: none;    
+  border-color: transparent;    
+  box-shadow:none;
+}
+
 </style>
 <template>
   <div class="topBox">
       <div class="box1">
-        <vue-ztree :list.sync='ztreeDataSource' :func='nodeClick' :is-open='true' :is-check='true'></vue-ztree>
+        <vue-ztree :list.sync='ztreeDataSource' :func='nodeClick' :delFunc='nodeDelete' :is-open='true' :is-check='false'></vue-ztree>
       </div>
-      <div>
-        sdfsdfsdfsdfsdf
+      <div class="div1" v-if="curNodeProps.length>0">
+        <div class="col-sm-12 hDiv2" v-for="(obj) in curNodeProps" v-bind:key="obj.id">
+            <label>{{obj.propName}}：</label>
+            <input type="text" class="form-control input-sm"  v-model="obj.propValue">
+        </div>
+        <button class="btn btn-sm btn-danger saveBtn" v-on:click="savePropValuesHandler">保存</button>
       </div>
   </div>
 </template>
@@ -33,11 +63,12 @@ export default {
     return {
       msg: "Hello Vue-Ztree-2.0!",
       ztreeDataSource: [],
-      ztreeRawDatas:null,
+      ztreeRawDatas: null,
       dataList: [],
       treeDeepCopy: [],
       parentNodeModel: [], //当前点击节点父亲对象
-      nodeModel: null // 当前点击节点对象
+      curNodeModel: null, // 当前点击节点对象
+      curNodeProps:[],
     };
   },
   methods: {
@@ -47,35 +78,78 @@ export default {
       for (var i = 0; i < data.length; i++) {
         if (parentId == data[i].id) {
           console.log(data[i]);
-
           vm.dataList.push(data[i]);
-
           vm.findById(vm.ztreeDataSource, data[i].parentId);
-
           return data[i];
         }
-
         if (data[i].hasOwnProperty("children")) {
           vm.findById(data[i].children, parentId);
         }
       }
     },
+    findSourceNodeById2(data, nodeId){
+      var vm = this;
+      var result;
+      for (let i = 0; i < data.length; i++) {
+        if (nodeId == data[i].id) {
+          result=data[i];
+          break;
+        }else{ 
+          if (data[i].hasOwnProperty("children")) {
+            result=vm.findSourceNodeById2(data[i].children, nodeId);
+            if(result){
+              break;
+            }
+          }
+        }
+      }
+      return result;
+    },
     // 点击节点
-    nodeClick: function(m, parent, trees) {
+    nodeClick(m, parent, trees) {
       this.treeDeepCopy = trees;
-      this.nodeModel = m; // 当前点击节点对象
+      this.curNodeModel = m; // 当前点击节点对象
       this.parentNodeModel = parent; //当前点击节点父亲对象
 
       console.log("currentNode=========:");
       console.log(m.rawData);
       console.log(parent.rawData);
       console.log("currentNode========end");
+      let arr=[];
+      for(let propName in this.curNodeModel){
+        if(propName.indexOf("@android")>=0||propName.indexOf("@package")>=0){
+          arr.push({propName:propName.substr(1),propValue:this.curNodeModel[propName]});
+        }
+      }
+      this.curNodeProps=arr;
 
       // 导航菜单
-      this.dataList = [];
-      this.findById(this.ztreeDataSource, m.parentId);
-      this.dataList = this.dataList.reverse();
-      this.dataList.push(m);
+      // this.dataList = [];
+      // this.findById(this.ztreeDataSource, m.parentId);
+      // this.dataList = this.dataList.reverse();
+      // this.dataList.push(m);
+    },
+    nodeDelete(m,indx){
+      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,m.id);
+      if(sourceNode.rawData.vParent instanceof Array){
+        let index=indx;
+        if(index>=0){
+          sourceNode.rawData.vParent.splice(index,1);
+        }else{
+          console.error("==============节点错误0================");
+          console.log(sourceNode.rawData.value);
+          console.log(sourceNode.rawData.vParent);
+          console.error("=====================================");
+        }
+      }else{
+        if(sourceNode.rawData.vParent.hasOwnProperty(sourceNode.rawData.key)){
+          delete sourceNode.rawData.vParent[sourceNode.rawData.key];
+        }else{
+          console.error("==============节点错误1================");
+          console.log(sourceNode);
+          console.error("=====================================");
+        }
+      }
     },
     deepCloneAndTranslate2(root, obj) {
       if (!(obj instanceof Array)) {
@@ -120,72 +194,25 @@ export default {
         }
       }
     },
-    deepCloneAndTranslate: function(root, obj, key) {
-      if (!(obj instanceof Array)) {
-        if (obj instanceof Object) {
-          let node = root;
-          for (let key in obj) {
-            if (key != "$" && key != "_") {
-              let value = obj[key];
-              if (value instanceof Array) {
-                let childNode;
-                if (value.length > 1) {
-                  childNode = { name: key, children: [] };
-                  root.children.push(childNode);
-                } else {
-                  childNode = root;
-                }
-                this.deepCloneAndTranslate(childNode, value, key);
-              } else if (value instanceof Object) {
-                this.deepCloneAndTranslate(node, value);
-              } else {
-                root[key] = value;
-              }
-            } else if (key === "$") {
-              let rawAtts = obj[key];
-              for (let attKey in rawAtts) {
-                node["@" + attKey] = rawAtts[attKey];
-              }
-              if (node["@android:name"]) {
-                node["name"] = `${node["name"]}(${node["@android:name"]})`;
-              } else if (node["@android:scheme"]) {
-                node["name"] = `${node["name"]}(scheme:${
-                  node["@android:scheme"]
-                })`;
-              }
-            } else if (key === "_") {
-              let value = obj[key];
-              node["#text"] = value;
-            }
-          }
-        } else {
-        }
-      } else {
-        for (let elem of obj) {
-          let childNode;
-          if (root.children) {
-            childNode = { children: [], name: key };
-            root.children.push(childNode);
-          } else {
-            childNode = root;
-          }
-          this.deepCloneAndTranslate(childNode, elem);
-        }
-      }
-    },
     createTreeData(node, nodeData) {
       for (let key in nodeData) {
         let value = nodeData[key];
-        if (key[0] === "@") {//copy 属性
+        if (key[0] === "@") {
+          //copy 属性
           node[key] = value;
         } else {
           if (value instanceof Array && value.length > 1) {
-            let childNode = { name: key, children: [], pNode: null ,ckbool:true};
+            let childNode = {
+              name: key,
+              children: [],
+              pNode: null,
+              ckbool: true
+            };
             node.children.push(childNode);
             nodeIdStart++;
             childNode.id = nodeIdStart;
             childNode.parentId = node.id;
-            childNode.rawData={key:key,value:value};
+            childNode.rawData = { key: key, value: value,vParent:nodeData};
 
             for (let ccData of value) {
               let ccName = "";
@@ -193,24 +220,34 @@ export default {
                 ccName = `${key}(${ccData["@android:name"]})`;
               } else if (ccData["@android:scheme"]) {
                 ccName = `${key}(scheme:${ccData["@android:scheme"]})`;
+              }else{
+                ccName=key;
               }
 
-              let childchildNode = { name: ccName, children: [], pNode: null,ckbool:true };
+              let childchildNode = {
+                name: ccName,
+                children: [],
+                pNode: null,
+                ckbool: true
+              };
               childNode.children.push(childchildNode);
               nodeIdStart++;
               childchildNode.id = nodeIdStart;
               childchildNode.parentId = childNode.id;
-              childchildNode.rawData={key:key,value:ccData};
+              childchildNode.rawData = { key: key, value: ccData,vParent:value };
               this.createTreeData(childchildNode, ccData);
             }
           } else {
             let cData;
             let cName;
+            let vParent;
             if (value instanceof Array) {
-              cData = nodeData[key][0];
+              cData = value[0];
+              vParent=value;
             } else {
-              cData = nodeData[key];
+              cData = value;
               cName = key;
+              vParent=nodeData;
             }
             if (cData["@android:name"]) {
               cName = `${key}(${cData["@android:name"]})`;
@@ -220,14 +257,40 @@ export default {
               cName = key;
             }
 
-            let childNode = { name: cName, children: [], pNode: null ,ckbool:true};
+            let childNode = {
+              name: cName,
+              children: [],
+              pNode: null,
+              ckbool: true
+            };
             node.children.push(childNode);
             nodeIdStart++;
             childNode.id = nodeIdStart;
             childNode.parentId = node.id;
-            childNode.rawData={key:key,value:cData};
+            childNode.rawData = { key: key, value: cData,vParent:vParent};
             this.createTreeData(childNode, cData);
           }
+        }
+      }
+    },
+    savePropValuesHandler() {
+      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,this.curNodeModel.id);
+      console.log(sourceNode);
+      for(let obj of this.curNodeProps){
+        console.log(obj.propName);
+        console.log(obj.propValue);
+        this.curNodeModel[`@${obj.propName}`]=obj.propValue;
+        this.curNodeModel.rawData.value[`@${obj.propName}`]=obj.propValue;
+
+        sourceNode[`@${obj.propName}`]=obj.propValue;
+        sourceNode.rawData.value[`@${obj.propName}`]=obj.propValue;
+
+        if(this.curNodeModel.name!==this.curNodeModel.rawData.key){
+           if (this.curNodeModel["@android:name"]) {
+              this.curNodeModel.name = `${this.curNodeModel.rawData.key}(${this.curNodeModel["@android:name"]})`;
+            } else if (this.curNodeModel["@android:scheme"]) {
+              this.curNodeModel.name = `${this.curNodeModel.rawData.key}(scheme:${this.curNodeModel["@android:scheme"]})`;
+            } 
         }
       }
     }
@@ -237,156 +300,19 @@ export default {
     vueZtree
   },
   mounted() {
-    // $.ajax({
-    //   url: "http://img.cdn.dx.uwan.com/test/AndroidManifest.xml",
-    //   async: false,
-    //   dataType: "text",
-    //   success: function(data2) {
-    //     console.log(data2);
-    //   }
-    // });
-    //   let maniXML = require('../AndroidManifest.xml');
-
-    // console.log(maniXML);
     const xml2js = require("xml2js");
     let parser = new xml2js.Parser();
     let rootNode = [{ name: "manifest", children: [] }];
     parser.parseString(xmlStr, (err, result) => {
       console.log(result);
-
-      //   this.deepCloneAndTranslate(rootNode[0], result);
-      //   // let application=rootNode["manifest"]["application"][0];
-      //   // application["name"]="Application"
-      //   // let manifest=rootNode["manifest"];
-      //   // manifest["name"]="manifest"
-      //   this.ztreeDataSource = rootNode; //[{"name":"Application",children:[]}];
-      //   // console.log(rootNode);
-
       let rootNode2 = {};
       this.deepCloneAndTranslate2(rootNode2, result);
-      this.ztreeRawDatas=rootNode2;
+      this.ztreeRawDatas = rootNode2;
       let rootNode3 = { name: "", children: [], id: 0, parentId: 0 };
       this.createTreeData(rootNode3, rootNode2);
       this.ztreeDataSource = rootNode3.children;
     });
-    // // 异步获取数据操作
-    // setTimeout(() => {
-    //   this.ztreeDataSource = [
-    //     {
-    //       id: 220,
-    //       parentId: 0,
-    //       name: "游戏1",
-    //       children: [
-    //         {
-    //           id: 221,
-    //           parentId: 220,
-    //           name: "游戏2",
-    //           path: "",
-    //           children: [
-    //             {
-    //               id: 222,
-    //               parentId: 221,
-    //               name: "游戏3",
-    //               path: "",
-    //               children: [
-    //                 {
-    //                   id: 223,
-    //                   parentId: 222,
-    //                   name: "游戏4",
-    //                   path: "",
-    //                   children: [
-    //                     {
-    //                       id: 224,
-    //                       parentId: 223,
-    //                       name: "游戏5",
-    //                       path: "",
-    //                       children: [
-    //                         {
-    //                           id: 225,
-    //                           parentId: 224,
-    //                           name: "游戏6",
-    //                           path: "",
-    //                           children: [
-    //                             {
-    //                               id: 226,
-    //                               parentId: 224,
-    //                               name: "游戏末节点",
-    //                               path: ""
-    //                             }
-    //                           ]
-    //                         }
-    //                       ]
-    //                     }
-    //                   ]
-    //                 }
-    //               ]
-    //             }
-    //           ]
-    //         }
-    //       ],
-    //       path: "http://www.baidu.com"
-    //     },
-    //     {
-    //       id: 1,
-    //       parentId: 0,
-    //       name: "音乐",
-    //       children: [],
-    //       path: "http://www.baidu.com"
-    //     },
-    //     {
-    //       id: 2,
-    //       parentId: 0,
-    //       name: "视频",
-    //       children: [
-    //         {
-    //           id: 3,
-    //           parentId: 2,
-    //           name: "电影",
-    //           children: [
-    //             {
-    //               id: 4,
-    //               parentId: 3,
-    //               name: "国产电影",
-    //               path: ""
-    //             },
-    //             {
-    //               id: 5,
-    //               parentId: 3,
-    //               name: "好莱坞电影",
-    //               path: ""
-    //             },
-    //             {
-    //               id: 6,
-    //               parentId: 3,
-    //               name: "小语种电影",
-    //               path: ""
-    //             }
-    //           ]
-    //         },
-    //         {
-    //           id: 7,
-    //           parentId: 2,
-    //           name: "短片",
-    //           children: [
-    //             {
-    //               id: 9,
-    //               parentId: 7,
-    //               name: "电视剧",
-    //               path: ""
-    //             },
-    //             {
-    //               id: 10,
-    //               parentId: 7,
-    //               name: "短片",
-    //               path: ""
-    //             }
-    //           ]
-    //         }
-    //       ],
-    //       path: ""
-    //     }
-    //   ];
-    // }, 1000);
+    
   }
 };
 let xmlStr = `<?xml version="1.0" encoding="utf-8"?>

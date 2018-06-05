@@ -122,7 +122,7 @@
 <template>
 	<!--（ztree－🌲）-->
 	<ul class="ztree">
-		<ztree-item v-for='(m,i) in treeDataSource' :key='i' :model.sync="m" :num.sync='i' root='0' :nodes.sync='treeDataSource.length' :ischeck='isCheck' :callback='func' :expandfunc='expand' :cxtmenufunc='contextmenu' :trees.sync='treeDataSource'></ztree-item>
+		<ztree-item v-for='(m,i) in treeDataSource' :key='i' :model.sync="m" :num.sync='i' root='0' :nodes.sync='treeDataSource.length' :ischeck='isCheck' :callback='func' :delCallback='delFunc' :expandfunc='expand' :cxtmenufunc='contextmenu' :trees.sync='treeDataSource'></ztree-item>
 	</ul>
 </template>
 
@@ -142,6 +142,11 @@ export default{
         },
         // 点击节点回调
 		func:{
+			type:Function,
+			default:null
+		},
+		// del节点回调
+		delFunc:{
 			type:Function,
 			default:null
 		},
@@ -175,7 +180,7 @@ export default{
             handler:function(){
             	this.initTreeData();
             },
-            deep:true
+            //deep:true
         }
 	},
 	methods:{
@@ -217,7 +222,7 @@ export default{
 
             recurrenceFunc(tempList);
 
-            this.treeDataSource = tempList;
+			this.treeDataSource = tempList;
         }
 	},
 	components:{
@@ -253,6 +258,9 @@ export default{
                     twoWay:true
         		},
         		callback:{
+					type:Function
+				},
+        		delCallback:{
 					type:Function
 				},
 				expandfunc:{
@@ -354,7 +362,7 @@ export default{
 	                }
                 },
                 enterFunc(m){
-                    m.hover = true;
+					m.hover = true;
                     this.getParentNode(m,null);
                 },
                 leaveFunc(m){
@@ -388,12 +396,18 @@ export default{
 			    // 删除节点
 			    delNode(nodeModel){
 			        if(nodeModel) {
+						let index;
 			           if(this.parentNodeModel.hasOwnProperty("children")) {
-			              this.parentNodeModel.children.splice(this.parentNodeModel.children.indexOf(nodeModel),1);
+						  index=this.parentNodeModel.children.indexOf(nodeModel);
+			              this.parentNodeModel.children.splice(index,1);
 			           }else if(this.parentNodeModel instanceof Array){
-			              // 第一级根节点处理
-			              this.parentNodeModel.splice(this.parentNodeModel.indexOf(nodeModel),1);
-			           }
+						  // 第一级根节点处理
+						  index=this.parentNodeModel.indexOf(nodeModel);
+			              this.parentNodeModel.splice(index,1);
+					   }
+					    if(typeof this.delCallback == "function") {
+				            this.delCallback.call(null,nodeModel,index);
+				        }
 			           nodeModel = null;
 			        }else {
 			           console.log("请先选中节点");
@@ -498,20 +512,22 @@ export default{
 				<a  @mouseenter='enterFunc(model)' @mouseleave='leaveFunc(model)'  @contextmenu.prevent='cxtmenufunc(model)'>
 				    <span :class="{loadSyncNode:model.loadNode==1}" v-if='model.loadNode==1'></span>
 				    <span :class='model.iconClass' v-show='model.iconClass' v-else></span>
-				    <span v-show='ischeck' id="treeDemo_5_check" class="button chk" :class='{"checkbox_false_full":!model.ckbool,"checkbox_true_full":model.ckbool}' @click='ckFunc(model)' treenode_check=""></span>
-					<span class="node_name" :class='aClassVal' @click='Func(model)' >{{model.name}}</span>
-					<!--新增-->
-					<span  v-show='model.hover' title='新增' class="button add" @click="addNode(model)"></span>
 					<!--删除-->
 				    <span v-show='model.hover' title='删除' class="button remove" @click="delNode(model)"></span>
-				    <!--上移-->
-				    <span v-show='model.hover' title='上移' class="button up" @click="upNode(model)"></span>
-				    <!--下移-->
-				    <span v-show='model.hover' title='下移' class="button down" @click="downNode(model)"></span>
+				    <span v-show='ischeck' id="treeDemo_5_check" class="button chk" :class='{"checkbox_false_full":!model.ckbool,"checkbox_true_full":model.ckbool}' @click='ckFunc(model)' treenode_check=""></span>
+					<span class="node_name" :class='aClassVal' @click='Func(model)' >{{model.name}}</span>
+					<!--新增
+					<span  v-show='model.hover' title='新增' class="button add" @click="addNode(model)"></span>-->
+					<!--删除
+				    <span v-show='model.hover' title='删除' class="button remove" @click="delNode(model)"></span>-->
+				    <!--上移
+				    <span v-show='model.hover' title='上移' class="button up" @click="upNode(model)"></span>-->
+				    <!--下移
+				    <span v-show='model.hover' title='下移' class="button down" @click="downNode(model)"></span>-->
 				</a>
 				
 				<ul :class="ulClassVal" v-show='model.isFolder'>
-					<ztree-item v-for="(item,i) in model.children" :key='i' :callback='callback' :expandfunc='expandfunc' :cxtmenufunc='cxtmenufunc' :model.sync="item" :num.sync='i' root='1' :nodes.sync='model.children.length' :ischeck='ischeck' :trees.sync='trees'></ztree-item>
+					<ztree-item v-for="(item,i) in model.children" :key='i' :callback='callback' :delCallback='delCallback' :expandfunc='expandfunc' :cxtmenufunc='cxtmenufunc' :model.sync="item" :num.sync='i' root='1' :nodes.sync='model.children.length' :ischeck='ischeck' :trees.sync='trees'></ztree-item>
 				</ul>
 			</li>`
 		}
