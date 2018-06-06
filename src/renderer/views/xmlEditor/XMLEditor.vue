@@ -50,43 +50,45 @@ html {
             <input type="text" class="form-control input-sm"  v-model="obj.propValue">
         </div>
         <button class="btn btn-sm btn-danger saveBtn" v-on:click="savePropValuesHandler">保存</button>
+        <button class="btn btn-sm btn-danger saveBtn" v-on:click="outHandler">导出XML</button>
       </div>
   </div>
 </template>
 
 <script>
 import vueZtree from "../comps/vue-ztree.vue";
-var $ = require("jquery");
 var nodeIdStart = 0;
 export default {
   data() {
     return {
-      msg: "Hello Vue-Ztree-2.0!",
       ztreeDataSource: [],
       ztreeRawDatas: null,
       dataList: [],
-      treeDeepCopy: [],
       parentNodeModel: [], //当前点击节点父亲对象
       curNodeModel: null, // 当前点击节点对象
       curNodeProps:[],
     };
   },
+  components: {
+    vueZtree
+  },
+  mounted() {
+    const xml2js = require("xml2js");
+    let parser = new xml2js.Parser();
+    let rootNode = [{ name: "manifest", children: [] }];
+    parser.parseString(xmlStr, (err, result) => {
+      console.log(result);
+      let rootNode2 = {};
+      this.deepCloneAndTranslate2(rootNode2, result);
+      console.log(rootNode2);
+      // this.ztreeRawDatas = rootNode2;
+      // let rootNode3 = { name: "", children: [], id: 0, parentId: 0 };
+      // this.createTreeData(rootNode3, rootNode2);
+      // this.ztreeDataSource = rootNode3.children;
+    });
+    
+  },
   methods: {
-    findById: function(data, parentId) {
-      var vm = this;
-
-      for (var i = 0; i < data.length; i++) {
-        if (parentId == data[i].id) {
-          console.log(data[i]);
-          vm.dataList.push(data[i]);
-          vm.findById(vm.ztreeDataSource, data[i].parentId);
-          return data[i];
-        }
-        if (data[i].hasOwnProperty("children")) {
-          vm.findById(data[i].children, parentId);
-        }
-      }
-    },
     findSourceNodeById2(data, nodeId){
       var vm = this;
       var result;
@@ -107,7 +109,6 @@ export default {
     },
     // 点击节点
     nodeClick(m, parent, trees) {
-      this.treeDeepCopy = trees;
       this.curNodeModel = m; // 当前点击节点对象
       this.parentNodeModel = parent; //当前点击节点父亲对象
 
@@ -122,19 +123,18 @@ export default {
         }
       }
       this.curNodeProps=arr;
-
-      // 导航菜单
-      // this.dataList = [];
-      // this.findById(this.ztreeDataSource, m.parentId);
-      // this.dataList = this.dataList.reverse();
-      // this.dataList.push(m);
     },
     nodeDelete(m,indx){
       let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,m.id);
       if(sourceNode.rawData.vParent instanceof Array){
         let index=indx;
         if(index>=0){
+          console.log("=====:"+index);
+          console.log(sourceNode.rawData.vParent);
           sourceNode.rawData.vParent.splice(index,1);
+          if(sourceNode.rawData.vParent.length==0&&sourceNode.rawData.vPParent){
+            delete sourceNode.rawData.vPParent[sourceNode.rawData.key];
+          }
         }else{
           console.error("==============节点错误0================");
           console.log(sourceNode.rawData.value);
@@ -142,6 +142,9 @@ export default {
           console.error("=====================================");
         }
       }else{
+        console.log(sourceNode.rawData.key);
+        console.log(sourceNode.rawData.vParent);
+        console.log(sourceNode.rawData.vPParent);
         if(sourceNode.rawData.vParent.hasOwnProperty(sourceNode.rawData.key)){
           delete sourceNode.rawData.vParent[sourceNode.rawData.key];
         }else{
@@ -150,6 +153,33 @@ export default {
           console.error("=====================================");
         }
       }
+    },
+    savePropValuesHandler() {
+      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,this.curNodeModel.id);
+      console.log(sourceNode);
+      for(let obj of this.curNodeProps){
+        console.log(obj.propName);
+        console.log(obj.propValue);
+        this.curNodeModel[`@${obj.propName}`]=obj.propValue;
+        this.curNodeModel.rawData.value[`@${obj.propName}`]=obj.propValue;
+
+        sourceNode[`@${obj.propName}`]=obj.propValue;
+        sourceNode.rawData.value[`@${obj.propName}`]=obj.propValue;
+
+        if(this.curNodeModel.name!==this.curNodeModel.rawData.key){
+          if (this.curNodeModel["@android:name"]) {
+            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(${this.curNodeModel["@android:name"]})`;
+          } else if (this.curNodeModel["@android:scheme"]) {
+            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(scheme:${this.curNodeModel["@android:scheme"]})`;
+          } 
+        }
+      }
+    },
+    outHandler(){
+      const xmlbuilder = require("xmlbuilder")
+      let feed = xmlbuilder.create(this.ztreeRawDatas, { encoding: 'utf-8' });
+      console.log(feed.end({ pretty: true }));
+
     },
     deepCloneAndTranslate2(root, obj) {
       if (!(obj instanceof Array)) {
@@ -234,7 +264,7 @@ export default {
               nodeIdStart++;
               childchildNode.id = nodeIdStart;
               childchildNode.parentId = childNode.id;
-              childchildNode.rawData = { key: key, value: ccData,vParent:value };
+              childchildNode.rawData = { key: key, value: ccData,vParent:value,vPParent:nodeData };
               this.createTreeData(childchildNode, ccData);
             }
           } else {
@@ -243,7 +273,7 @@ export default {
             let vParent;
             if (value instanceof Array) {
               cData = value[0];
-              vParent=value;
+              vParent=nodeData;//value;
             } else {
               cData = value;
               cName = key;
@@ -273,47 +303,7 @@ export default {
         }
       }
     },
-    savePropValuesHandler() {
-      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,this.curNodeModel.id);
-      console.log(sourceNode);
-      for(let obj of this.curNodeProps){
-        console.log(obj.propName);
-        console.log(obj.propValue);
-        this.curNodeModel[`@${obj.propName}`]=obj.propValue;
-        this.curNodeModel.rawData.value[`@${obj.propName}`]=obj.propValue;
-
-        sourceNode[`@${obj.propName}`]=obj.propValue;
-        sourceNode.rawData.value[`@${obj.propName}`]=obj.propValue;
-
-        if(this.curNodeModel.name!==this.curNodeModel.rawData.key){
-           if (this.curNodeModel["@android:name"]) {
-              this.curNodeModel.name = `${this.curNodeModel.rawData.key}(${this.curNodeModel["@android:name"]})`;
-            } else if (this.curNodeModel["@android:scheme"]) {
-              this.curNodeModel.name = `${this.curNodeModel.rawData.key}(scheme:${this.curNodeModel["@android:scheme"]})`;
-            } 
-        }
-      }
-    }
   },
-
-  components: {
-    vueZtree
-  },
-  mounted() {
-    const xml2js = require("xml2js");
-    let parser = new xml2js.Parser();
-    let rootNode = [{ name: "manifest", children: [] }];
-    parser.parseString(xmlStr, (err, result) => {
-      console.log(result);
-      let rootNode2 = {};
-      this.deepCloneAndTranslate2(rootNode2, result);
-      this.ztreeRawDatas = rootNode2;
-      let rootNode3 = { name: "", children: [], id: 0, parentId: 0 };
-      this.createTreeData(rootNode3, rootNode2);
-      this.ztreeDataSource = rootNode3.children;
-    });
-    
-  }
 };
 let xmlStr = `<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"

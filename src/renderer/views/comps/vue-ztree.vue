@@ -1,7 +1,7 @@
 <style>
-	div.ztree_content_wrap {height:380px; }
+	/* div.ztree_content_wrap {height:380px; }
 	div.ztree_content_wrap div.left{float: left;width: 100%;}
-	div.zTreeDemoBackground {width:100%;height:200px;text-align:left;}
+	div.zTreeDemoBackground {width:100%;height:200px;text-align:left;} */
 
 	.expendIcon {
 		background-position: -74px -36px;
@@ -22,7 +22,7 @@
 	    background-image: url("../../images/ztree/zTreeStandard.png");
 	}
 
-	ul.ztree {border:0px solid #ddd;background: #ffffff;width:100%;height:auto;overflow-y:auto;overflow-x:auto;}
+	ul.ztree {border:0px solid #ddd;background: #ffffff;width:100%;height:auto;min-height:100vh;overflow-y:auto;overflow-x:auto;}
 
 	.ztree * {padding:0; margin:0; font-size:15px; font-family: Verdana, Arial, Helvetica, AppleGothic, sans-serif}
 	.ztree {margin:0; padding:5px; color:#333 ;}
@@ -399,15 +399,15 @@ export default{
 						let index;
 			           if(this.parentNodeModel.hasOwnProperty("children")) {
 						  index=this.parentNodeModel.children.indexOf(nodeModel);
-			              this.parentNodeModel.children.splice(index,1);
+						  this.parentNodeModel.children.splice(index,1);
 			           }else if(this.parentNodeModel instanceof Array){
 						  // 第一级根节点处理
 						  index=this.parentNodeModel.indexOf(nodeModel);
-			              this.parentNodeModel.splice(index,1);
+						  this.parentNodeModel.splice(index,1);
 					   }
 					    if(typeof this.delCallback == "function") {
 				            this.delCallback.call(null,nodeModel,index);
-				        }
+						}
 			           nodeModel = null;
 			        }else {
 			           console.log("请先选中节点");
