@@ -54,7 +54,6 @@ html {
             <input type="text" class="form-control input-sm"  v-model="obj.propValue">
         </div>
         <button class="btn btn-sm btn-danger saveBtn" v-on:click="savePropValuesHandler">保存</button>
-        <button class="btn btn-sm btn-danger saveBtn" v-on:click="outHandler">导出XML</button>
       </div>
   </div>
 </template>
@@ -118,7 +117,7 @@ export default {
           },
           index => {
             if (index === 0) {
-                remote.BrowserWindow.fromId(self.mainWinId).webContents.send('save_manifest', self.outputXML());
+                remote.BrowserWindow.fromId(self.mainWinId).webContents.send('save_manifest', JSON.stringify(self.ztreeRawDatas));
             } else {
             }
           }

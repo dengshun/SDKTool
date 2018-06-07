@@ -857,7 +857,8 @@ export default {
         ).then(stdout => {
           console.log(stdout)
           console.log("R.java生成成功");
-          let packageName=this.sdkInfo.getPackage()||this.originalPackageName;
+          let manifest=this.editorAPKManifest||this.originalAPKManifest;
+          let packageName=manifest.getPackageName();//this.sdkInfo.getPackage()||this.originalPackageName;
           let rFilePath=path.join(genPath,...packageName.split("."),"R.java");
           console.log("====:"+rFilePath);
           let javacCMD;
@@ -971,6 +972,7 @@ export default {
       this.misSDKVer="";
       this.misPackage="";
       this.misChannelName="";
+      this.editorAPKManifest=null;
       console.log(this.sdkInfo,"==============",this.sdkInfo?this.sdkInfo.sdkId:"")
       if(this.sdkInfo){
         this.misGameName=this.sdkInfo.getAppName();
@@ -1073,16 +1075,14 @@ export default {
           }
           if(this.sdkInfo.sdkId!==""){
             let parser = new xml2js.Parser()
-            fs.readFileSync(path.join(global_.workBasePath, "sdk",this.sdkInfo.sdkId,this.sdkInfo.sdkVersion, "AndroidManifest.xml"),(err, data) => {
-                parser.parseString(data, (err, result) => {
+            let xmlStr=fs.readFileSync(path.join(global_.workBasePath, "sdk",this.sdkInfo.sdkId,this.sdkInfo.sdkVersion, "AndroidManifest.xml"))
+            parser.parseString(xmlStr, (err, result) => {
                   let sdkManifest=new APKManifest();
                   sdkManifest.initData(result);
                   this.editorAPKManifest.mergeActivity(sdkManifest.activityNodes);
                   this.editorAPKManifest.mergeMetaData(sdkManifest.metaDataNodes);
                   this.editorAPKManifest.mergePermission(sdkManifest.usesPermissionNodes);
-                })
-              }
-            )
+            })
           }
         }
       }
@@ -1090,7 +1090,6 @@ export default {
         const winURL = process.env.NODE_ENV === 'development' ?
       `http://localhost:9080/#xmleditor` :
       `file://${__dirname}/index.html#xmleditor`
-        let dataa={id:111,name:"kaka"};
         let mainWin=BrowserWindow.getFocusedWindow();
         let mainWinId=mainWin.id;
         let win = new BrowserWindow({parent:mainWin,width: 800, height: 620 ,title:"Manifest.xml编辑器"})
@@ -1108,6 +1107,7 @@ export default {
         });
         ipc.on("save_manifest",(event,data)=>{
           this.editorAPKManifest.updateRoot(JSON.parse(data));
+          this.logStr += "manifest.xml修改成功…………………\n"
         });
         this.maninfestEditorWin=win;
         win.show();
