@@ -1,9 +1,9 @@
 <template>
     <div>
         <div class="tabDiv">
-            <button v-on:click="selectAPKHandler" v-bind:disabled="selectAPKBtnDisabled" class="btn btn-sm btn-success">选择APK文件</button>
-            <button v-on:click="selectSDKCfgFile" v-bind:disabled="selectConfigDisabled" class="btn btn-sm btn-success">选择渠道文件</button>
-            <button v-on:click="packHandler" v-bind:disabled="packBtnDisabled" class="btn btn-sm btn-success">生成APK</button>
+            <button v-on:click="selectAPKHandler" v-bind:disabled="selectAPKBtnDisabled||maninfestEditorWin" class="btn btn-sm btn-success">选择APK文件</button>
+            <button v-on:click="selectSDKCfgFile" v-bind:disabled="selectConfigDisabled||maninfestEditorWin" class="btn btn-sm btn-success">选择渠道文件</button>
+            <button v-on:click="packHandler" v-bind:disabled="packBtnDisabled||maninfestEditorWin" class="btn btn-sm btn-success">生成APK</button>
         </div>
         <div class="labelDiv">
             <label class="col-sm col-form-label titleLab">
@@ -41,7 +41,7 @@
                     <myImage :src="iconUrl" width="60" height="60" />
                 </div>
                 <div>
-                    <button v-on:click="selectIconHandler" v-bind:disabled="selectIconBtnDisabled" class="btn btn-sm btn-success icoSelectBtn">修改图标</button>
+                    <button v-on:click="selectIconHandler" v-bind:disabled="selectIconBtnDisabled||maninfestEditorWin" class="btn btn-sm btn-success icoSelectBtn">修改图标</button>
                 </div>
             </div>
             <div v-for="(splashItem,index) in originalSplashList" v-bind:key="splashItem.id">
@@ -52,7 +52,7 @@
                     <myImage :src="splashItem.showUrl" width="60" height="60" />
                 </div>
                 <div>
-                    <button @click="selectSplashHandler(splashItem)" v-bind:disabled="selectIconBtnDisabled" class="btn btn-sm btn-success icoSelectBtn">修改闪屏</button>
+                    <button @click="selectSplashHandler(splashItem)" v-bind:disabled="selectIconBtnDisabled||maninfestEditorWin" class="btn btn-sm btn-success icoSelectBtn">修改闪屏</button>
                 </div>
             </div>
         </div>
@@ -98,7 +98,7 @@
         </div>
         <div class='infoDiv'>
             <div class="infoTable">
-              <a href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
+              <a v-if="originalAPKManafest" href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
             </div>
         </div>
         <div class="labelDiv">
@@ -123,6 +123,7 @@ import Vue from "vue"
 import APKManifest from "../../../common/manifest/APKManifest"
 import ValueXML from "../../../common/valueXML"
 import SDKInfo from "../../../common/SDKInfo"
+//import { setTimeout } from 'timers';
 const archiver = require('archiver');
 const extract = require('extract-zip')
 const path = require("path")
@@ -166,6 +167,7 @@ export default {
       misSDKVer:"",
       misPackage:"",
       misChannelName:"",
+      maninfestEditorWin:null,
     }
   },
   components: {
@@ -368,6 +370,7 @@ export default {
               fs.mkdirSync(path.join(global_.workBasePath, "new", "smali"))
               fs.mkdirSync(path.join(global_.workBasePath, "new", "mis"))
               fs.mkdirSync(path.join(global_.workBasePath, "new", "pack"))
+              fs.mkdirSync(path.join(global_.workBasePath, "new", "manifest"))
               
               let toPath = path.join(
                 global_.workBasePath,
@@ -1043,17 +1046,32 @@ export default {
       });
     },
     modifyManifestXMLHandler(){
-      const winURL = process.env.NODE_ENV === 'development' ?
-    `http://localhost:9080/#xmleditor` :
-    `file://${__dirname}/index.html#xmleditor`
-      let win = new BrowserWindow({ width: 800, height: 620 ,title:"Manifest.xml编辑器"})
-      win.on('close', function () { win = null })
-      win.loadURL(winURL)
-      win.on('page-title-updated', function(){
+      if(this.maninfestEditorWin==null){
+        const winURL = process.env.NODE_ENV === 'development' ?
+      `http://localhost:9080/#xmleditor` :
+      `file://${__dirname}/index.html#xmleditor`
+        let dataa={id:111,name:"kaka"};
+        let mainWin=BrowserWindow.getFocusedWindow();
+        let mainWinId=mainWin.id;
+        let win = new BrowserWindow({parent:mainWin,width: 800, height: 620 ,title:"Manifest.xml编辑器"})
+        win.on('close', ()=> { 
+          this.maninfestEditorWin = null ;
+          win=null;
+        })
+        win.loadURL(winURL)
+        win.on('page-title-updated', ()=>{
           console.log("show............");
-        win.setTitle("Manifest.xml编辑器")
-      })
-      win.show();
+          win.setTitle("Manifest.xml编辑器")
+        })
+        win.webContents.on('did-finish-load', () => {
+            win.webContents.send("update_data",{mainWinId: mainWinId,winId:win.id,data:JSON.stringify(this.originalAPKManafest.rootNode)});
+        });
+        ipc.on("save_manifest",(event,data)=>{
+          console.log("save................................:"+data);
+        });
+        this.maninfestEditorWin=win;
+        win.show();
+      }
     }
   }
 }

@@ -12,32 +12,36 @@ html {
   height: 100vh;
   overflow: auto;
 }
-.div1{
+.div1 {
   margin: 20px 0px 0px 5px;
   width: 100%;
 }
 .hDiv2 {
   margin: 0px 0px 10px 0px;
 }
-.hDiv2 label{
+.hDiv2 label {
   color: blue;
   width: 200px;
   height: 20px;
   text-align: left;
 }
-.hDiv2 input{
+.hDiv2 input {
   width: 100%;
 }
 .saveBtn {
   width: 200px;
   margin: 20px 0px 0px 17px;
 }
-.saveBtn:focus,.saveBtn:active:focus,.saveBtn.active:focus,.saveBtn.focus,.saveBtn:active.focus,.saveBtn.active.focus{    
-  outline: none;    
-  border-color: transparent;    
-  box-shadow:none;
+.saveBtn:focus,
+.saveBtn:active:focus,
+.saveBtn.active:focus,
+.saveBtn.focus,
+.saveBtn:active.focus,
+.saveBtn.active.focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: none;
 }
-
 </style>
 <template>
   <div class="topBox">
@@ -57,49 +61,83 @@ html {
 
 <script>
 import vueZtree from "../comps/vue-ztree.vue";
+const { remote, ipcRenderer } = require('electron')
+const xml2js = require("xml2js");
 var nodeIdStart = 0;
 export default {
   data() {
     return {
       ztreeDataSource: [],
       ztreeRawDatas: null,
-      dataList: [],
       parentNodeModel: [], //当前点击节点父亲对象
       curNodeModel: null, // 当前点击节点对象
-      curNodeProps:[],
+      curNodeProps: [],
+      winId: 0,
+      mainWinId:0,
+      isDirty:false,
     };
   },
   components: {
     vueZtree
   },
   mounted() {
-    const xml2js = require("xml2js");
-    let parser = new xml2js.Parser();
-    let rootNode = [{ name: "manifest", children: [] }];
-    parser.parseString(xmlStr, (err, result) => {
-      console.log(result);
-      let rootNode2 = {};
-      this.deepCloneAndTranslate2(rootNode2, result);
-      console.log(rootNode2);
-      // this.ztreeRawDatas = rootNode2;
-      // let rootNode3 = { name: "", children: [], id: 0, parentId: 0 };
-      // this.createTreeData(rootNode3, rootNode2);
-      // this.ztreeDataSource = rootNode3.children;
+    let self=this;
+    // let parser = new xml2js.Parser();
+    // let rootNode = [{ name: "manifest", children: [] }];
+    // parser.parseString(xmlStr, (err, result) => {
+    //   console.log(result);
+    //   let rootNode2 = {};
+    //   this.deepCloneAndTranslate2(rootNode2, result);
+    //   console.log(rootNode2);
+    //   this.ztreeRawDatas = rootNode2;
+    //   let rootNode3 = { name: "", children: [], id: -1, parentId: -1 };
+    //   this.createTreeData(rootNode3, rootNode2);
+    //   this.ztreeDataSource = rootNode3.children;
+    // });
+    ipcRenderer.on("update_data", (event, data) => {
+      this.winId = data.winId;
+      this.mainWinId=data.mainWinId;
+      console.log(data.data);
+      console.log("--------------sdfsdfdfdfsdf::" + this.winId,"||"+this.mainWinId);
+      let rootNode2 = JSON.parse(data.data);
+      this.ztreeRawDatas = rootNode2;
+      let rootNode3 = { name: "", children: [], id: -1, parentId: -1 };
+      this.createTreeData(rootNode3, rootNode2);
+      this.ztreeDataSource = rootNode3.children;
+      this.isDirty=false;
     });
-    
+    window.onbeforeunload = function(e) {
+      if(self.isDirty){
+        let buttons = ["保存", "取消"];
+        remote.dialog.showMessageBox(
+          {
+            type: "question",
+            title: "提示",
+            buttons: buttons,
+            message: "Manifest.xml已修改，是否保存？"
+          },
+          index => {
+            if (index === 0) {
+                remote.BrowserWindow.fromId(self.mainWinId).webContents.send('save_manifest', self.outputXML());
+            } else {
+            }
+          }
+        );
+      }
+    };
   },
   methods: {
-    findSourceNodeById2(data, nodeId){
+    findSourceNodeById2(data, nodeId) {
       var vm = this;
       var result;
       for (let i = 0; i < data.length; i++) {
         if (nodeId == data[i].id) {
-          result=data[i];
+          result = data[i];
           break;
-        }else{ 
+        } else {
           if (data[i].hasOwnProperty("children")) {
-            result=vm.findSourceNodeById2(data[i].children, nodeId);
-            if(result){
+            result = vm.findSourceNodeById2(data[i].children, nodeId);
+            if (result) {
               break;
             }
           }
@@ -116,38 +154,54 @@ export default {
       console.log(m.rawData);
       console.log(parent.rawData);
       console.log("currentNode========end");
-      let arr=[];
-      for(let propName in this.curNodeModel){
-        if(propName.indexOf("@android")>=0||propName.indexOf("@package")>=0){
-          arr.push({propName:propName.substr(1),propValue:this.curNodeModel[propName]});
+      let arr = [];
+      for (let propName in this.curNodeModel) {
+        if (
+          propName.indexOf("@android") >= 0 ||
+          propName.indexOf("@package") >= 0
+        ) {
+          arr.push({
+            propName: propName.substr(1),
+            propValue: this.curNodeModel[propName]
+          });
         }
       }
-      this.curNodeProps=arr;
+      this.curNodeProps = arr;
     },
-    nodeDelete(m,indx){
-      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,m.id);
-      if(sourceNode.rawData.vParent instanceof Array){
-        let index=indx;
-        if(index>=0){
-          console.log("=====:"+index);
-          console.log(sourceNode.rawData.vParent);
-          sourceNode.rawData.vParent.splice(index,1);
-          if(sourceNode.rawData.vParent.length==0&&sourceNode.rawData.vPParent){
+    nodeDelete(m) {
+      this.isDirty=true;
+      if(m==this.curNodeModel){
+        this.curNodeModel=null;
+        this.parentNodeModel=null;
+        this.curNodeProps.splice(0,this.curNodeProps.length);
+      }
+      let sourceNode = this.findSourceNodeById2(this.ztreeDataSource, m.id);
+      if (sourceNode.rawData.vParent instanceof Array) {
+        let idx = -1;
+        for (let i = 0; i < sourceNode.rawData.vParent.length; i++) {
+          if (m.id == sourceNode.rawData.vParent[i]["__id__"]) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx >= 0) {
+          sourceNode.rawData.vParent.splice(idx, 1);
+          if (
+            sourceNode.rawData.vParent.length == 0 &&
+            sourceNode.rawData.vPParent
+          ) {
             delete sourceNode.rawData.vPParent[sourceNode.rawData.key];
           }
-        }else{
+        } else {
           console.error("==============节点错误0================");
           console.log(sourceNode.rawData.value);
           console.log(sourceNode.rawData.vParent);
           console.error("=====================================");
         }
-      }else{
-        console.log(sourceNode.rawData.key);
-        console.log(sourceNode.rawData.vParent);
-        console.log(sourceNode.rawData.vPParent);
-        if(sourceNode.rawData.vParent.hasOwnProperty(sourceNode.rawData.key)){
+      } else {
+        if (sourceNode.rawData.vParent.hasOwnProperty(sourceNode.rawData.key)) {
           delete sourceNode.rawData.vParent[sourceNode.rawData.key];
-        }else{
+        } else {
           console.error("==============节点错误1================");
           console.log(sourceNode);
           console.error("=====================================");
@@ -155,31 +209,44 @@ export default {
       }
     },
     savePropValuesHandler() {
-      let sourceNode=this.findSourceNodeById2(this.ztreeDataSource,this.curNodeModel.id);
+      let sourceNode = this.findSourceNodeById2(
+        this.ztreeDataSource,
+        this.curNodeModel.id
+      );
       console.log(sourceNode);
-      for(let obj of this.curNodeProps){
+      for (let obj of this.curNodeProps) {
         console.log(obj.propName);
         console.log(obj.propValue);
-        this.curNodeModel[`@${obj.propName}`]=obj.propValue;
-        this.curNodeModel.rawData.value[`@${obj.propName}`]=obj.propValue;
+        if(this.curNodeModel[`@${obj.propName}`]!==obj.propValue){
+          this.curNodeModel[`@${obj.propName}`] = obj.propValue;
+          this.isDirty=true;
+        }
+        this.curNodeModel.rawData.value[`@${obj.propName}`] = obj.propValue;
 
-        sourceNode[`@${obj.propName}`]=obj.propValue;
-        sourceNode.rawData.value[`@${obj.propName}`]=obj.propValue;
+        sourceNode[`@${obj.propName}`] = obj.propValue;
+        sourceNode.rawData.value[`@${obj.propName}`] = obj.propValue;
 
-        if(this.curNodeModel.name!==this.curNodeModel.rawData.key){
+        if (this.curNodeModel.name !== this.curNodeModel.rawData.key) {
           if (this.curNodeModel["@android:name"]) {
-            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(${this.curNodeModel["@android:name"]})`;
+            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(${
+              this.curNodeModel["@android:name"]
+            })`;
           } else if (this.curNodeModel["@android:scheme"]) {
-            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(scheme:${this.curNodeModel["@android:scheme"]})`;
-          } 
+            this.curNodeModel.name = `${this.curNodeModel.rawData.key}(scheme:${
+              this.curNodeModel["@android:scheme"]
+            })`;
+          }
         }
       }
     },
-    outHandler(){
-      const xmlbuilder = require("xmlbuilder")
-      let feed = xmlbuilder.create(this.ztreeRawDatas, { encoding: 'utf-8' });
-      console.log(feed.end({ pretty: true }));
-
+    outHandler() {
+      console.log(this.ztreeRawDatas);
+      console.log(this.outputXML());
+    },
+    outputXML(){
+      const xmlbuilder = require("xmlbuilder");
+      let feed = xmlbuilder.create(this.ztreeRawDatas, { encoding: "utf-8" });
+      return feed.end({ pretty: true });
     },
     deepCloneAndTranslate2(root, obj) {
       if (!(obj instanceof Array)) {
@@ -231,27 +298,15 @@ export default {
           //copy 属性
           node[key] = value;
         } else {
-          if (value instanceof Array && value.length > 1) {
-            let childNode = {
-              name: key,
-              children: [],
-              pNode: null,
-              ckbool: true
-            };
-            node.children.push(childNode);
-            nodeIdStart++;
-            childNode.id = nodeIdStart;
-            childNode.parentId = node.id;
-            childNode.rawData = { key: key, value: value,vParent:nodeData};
-
+          if (value instanceof Array) {
             for (let ccData of value) {
               let ccName = "";
               if (ccData["@android:name"]) {
                 ccName = `${key}(${ccData["@android:name"]})`;
               } else if (ccData["@android:scheme"]) {
                 ccName = `${key}(scheme:${ccData["@android:scheme"]})`;
-              }else{
-                ccName=key;
+              } else {
+                ccName = key;
               }
 
               let childchildNode = {
@@ -260,25 +315,27 @@ export default {
                 pNode: null,
                 ckbool: true
               };
-              childNode.children.push(childchildNode);
+              node.children.push(childchildNode);
               nodeIdStart++;
               childchildNode.id = nodeIdStart;
-              childchildNode.parentId = childNode.id;
-              childchildNode.rawData = { key: key, value: ccData,vParent:value,vPParent:nodeData };
+              childchildNode.parentId = node.id;
+              Object.defineProperty(ccData, "__id__", {
+                value: childchildNode.id,
+                enumerable: false
+              });
+              childchildNode.rawData = {
+                key: key,
+                value: ccData,
+                vParent: value,
+                vPParent: nodeData
+              };
               this.createTreeData(childchildNode, ccData);
             }
           } else {
-            let cData;
-            let cName;
-            let vParent;
-            if (value instanceof Array) {
-              cData = value[0];
-              vParent=nodeData;//value;
-            } else {
-              cData = value;
-              cName = key;
-              vParent=nodeData;
-            }
+            let cData = value;
+            let cName = key;
+            let vParent = nodeData;
+
             if (cData["@android:name"]) {
               cName = `${key}(${cData["@android:name"]})`;
             } else if (cData["@android:scheme"]) {
@@ -297,13 +354,17 @@ export default {
             nodeIdStart++;
             childNode.id = nodeIdStart;
             childNode.parentId = node.id;
-            childNode.rawData = { key: key, value: cData,vParent:vParent};
+            Object.defineProperty(cData, "__id__", {
+              value: childNode.id,
+              enumerable: false
+            });
+            childNode.rawData = { key: key, value: cData, vParent: vParent };
             this.createTreeData(childNode, cData);
           }
         }
       }
-    },
-  },
+    }
+  }
 };
 let xmlStr = `<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
