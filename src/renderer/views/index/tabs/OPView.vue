@@ -98,7 +98,7 @@
         </div>
         <div class='infoDiv'>
             <div class="infoTable">
-              <a v-if="originalAPKManafest" href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
+              <a v-if="originalAPKManifest" href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
             </div>
         </div>
         <div class="labelDiv">
@@ -161,7 +161,8 @@ export default {
       originalSplashList: [],
       originalSplashUrls: [],
       originalSplashUrls2: [],
-      originalAPKManafest:null,
+      originalAPKManifest:null,
+      editorAPKManifest:null,
       misGameName:"",
       misSDKName:"",
       misSDKVer:"",
@@ -220,8 +221,8 @@ export default {
             parser.parseString(data, (err, result) => {
               this.originalRawManifest = result
               // console.log("sdfsdfsdf:"+xmlbuilder.create(result));
-              this.originalAPKManafest=new APKManifest();
-              this.originalAPKManafest.initData(result);
+              this.originalAPKManifest=new APKManifest();
+              this.originalAPKManifest.initData(result);
               let tmpAppName =
                 result.manifest.application[0]["$"]["android:label"]
               if (tmpAppName[0] === "@") {
@@ -370,7 +371,7 @@ export default {
               fs.mkdirSync(path.join(global_.workBasePath, "new", "smali"))
               fs.mkdirSync(path.join(global_.workBasePath, "new", "mis"))
               fs.mkdirSync(path.join(global_.workBasePath, "new", "pack"))
-              fs.mkdirSync(path.join(global_.workBasePath, "new", "manifest"))
+              // fs.mkdirSync(path.join(global_.workBasePath, "new", "manifest"))
               
               let toPath = path.join(
                 global_.workBasePath,
@@ -546,6 +547,9 @@ export default {
         path.join(global_.workBasePath, "original", "gameClient"),
         path.join(global_.workBasePath, "new", "gameClient"), { filter: filterFunc },
         err => {
+          if(this.editorAPKManifest){
+            fs.outputFileSync(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.editorAPKManifest.makeXMLString());
+          }
           this.logStr += "拷贝游戏文件结束"
           this.pack_copyIcon().then(() => {
             this.pack_copySplash().then(() => {
@@ -813,23 +817,28 @@ export default {
     mergeManifest(){
       return new Promise((resolve, reject) => {
         this.logStr += `合并AndroidManifest.xml\n`
-        let parser = new xml2js.Parser()
-        fs.readFile(path.join(global_.workBasePath, "sdk",this.sdkInfo.sdkId,this.sdkInfo.sdkVersion, "AndroidManifest.xml"),(err, data) => {
-            parser.parseString(data, (err, result) => {
-              let sdkManifest=new APKManifest();
-              sdkManifest.initData(result);
-              this.originalAPKManafest.mergeActivity(sdkManifest.activityNodes);
-              this.originalAPKManafest.mergeMetaData(sdkManifest.metaDataNodes);
-              this.originalAPKManafest.mergePermission(sdkManifest.usesPermissionNodes);
-              fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.originalAPKManafest.makeXMLString(), err => {
-                  console.log(err) // => null
-                  this.logStr += `合并AndroidManifest.xml完成\n`
-                  resolve();
-              })
+        if(!this.editorAPKManifest){//editorAPKMafest已经合并
+          let parser = new xml2js.Parser()
+          fs.readFile(path.join(global_.workBasePath, "sdk",this.sdkInfo.sdkId,this.sdkInfo.sdkVersion, "AndroidManifest.xml"),(err, data) => {
+              parser.parseString(data, (err, result) => {
+                let sdkManifest=new APKManifest();
+                sdkManifest.initData(result);
+                this.originalAPKManifest.mergeActivity(sdkManifest.activityNodes);
+                this.originalAPKManifest.mergeMetaData(sdkManifest.metaDataNodes);
+                this.originalAPKManifest.mergePermission(sdkManifest.usesPermissionNodes);
+                fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.originalAPKManifest.makeXMLString(), err => {
+                    console.log(err) // => null
+                    this.logStr += `合并AndroidManifest.xml完成\n`
+                    resolve();
+                })
+              }
+            )
             }
           )
-          }
-        )
+        }else{
+           this.logStr += `合并AndroidManifest.xml完成\n`
+           resolve();
+        }
       });
     },
     createR(){
@@ -977,26 +986,30 @@ export default {
     },
     modifyPackage(){
       return new Promise((resolve, reject) => {
+        let manifest=this.editorAPKManifest||this.originalAPKManifest;
         if(this.sdkInfo){
-          let newPackage=this.sdkInfo.getPackage();
-          if(newPackage&&newPackage!=this.originalPackageName){
-            this.originalAPKManafest.modifyPackageName(newPackage);
-            fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.originalAPKManafest.makeXMLString(), err => {
-              console.log(err) // => null
-              this.logStr += `游戏包名修改完成\n`
-              resolve();
-            })
+            let newPackage=this.sdkInfo.getPackage();
+            if(newPackage&&
+               newPackage!=manifest.getPackageName()&&
+               (this.editorAPKManifest==null||(this.editorAPKManifest.getPackageName()===this.originalAPKManifest.getPackageName()))){
+              manifest.modifyPackageName(newPackage);
+              fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), manifest.makeXMLString(), err => {
+                console.log(err) // => null
+                this.logStr += `游戏包名修改完成\n`
+                resolve();
+              })
+            }else{
+                resolve();
+            }
           }else{
               resolve();
           }
-        }else{
-            resolve();
-        }
       });
     },
     modifyGameName(){
       return new Promise((resolve, reject) => {
-        let appLabel=this.originalAPKManafest.getAppLabel();
+        let manifest=this.editorAPKManifest||this.originalAPKManifest;
+        let appLabel=manifest.getAppLabel();
         if(appLabel.indexOf("@string")>=0){
             let stringValuePath=path.join(global_.workBasePath, "new", "gameClient","res","values","strings.xml");
             let fileStr=fs.readFileSync(stringValuePath);
@@ -1020,15 +1033,20 @@ export default {
               }
             });
         }else{
-          this.originalAPKManafest.updateAppLabel(this.misGameName);
-          fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.originalAPKManafest.makeXMLString(),err => {
-            if(!err){
-              this.logStr += `游戏名称修改成功：${this.misGameName}\n`;
-             }else{
-               this.logStr += `游戏名称修改失败：${this.misGameName}\n`;
-             }
-             resolve();
-          }); 
+          if(((!this.editorAPKManifest)||(this.editorAPKManifest.getAppLabel()===this.originalAPKManifest.getAppLabel()))
+          &&this.misGameName!=this.originalAPKManifest.getAppLabel()){
+            manifest.updateAppLabel(this.misGameName);
+            fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), manifest.makeXMLString(),err => {
+              if(!err){
+                this.logStr += `游戏名称修改成功：${this.misGameName}\n`;
+              }else{
+                this.logStr += `游戏名称修改失败：${this.misGameName}\n`;
+              }
+              resolve();
+            }); 
+          }else{
+              resolve();
+          }
         }
       });
     },
@@ -1046,6 +1064,28 @@ export default {
       });
     },
     modifyManifestXMLHandler(){
+      if(this.editorAPKManifest==null){
+        this.editorAPKManifest=this.originalAPKManifest.clone();
+        if(this.sdkInfo){
+          let newPackage=this.sdkInfo.getPackage();
+          if(newPackage&&newPackage!=this.originalPackageName){
+            this.editorAPKManifest.modifyPackageName(newPackage);
+          }
+          if(this.sdkInfo.sdkId!==""){
+            let parser = new xml2js.Parser()
+            fs.readFileSync(path.join(global_.workBasePath, "sdk",this.sdkInfo.sdkId,this.sdkInfo.sdkVersion, "AndroidManifest.xml"),(err, data) => {
+                parser.parseString(data, (err, result) => {
+                  let sdkManifest=new APKManifest();
+                  sdkManifest.initData(result);
+                  this.editorAPKManifest.mergeActivity(sdkManifest.activityNodes);
+                  this.editorAPKManifest.mergeMetaData(sdkManifest.metaDataNodes);
+                  this.editorAPKManifest.mergePermission(sdkManifest.usesPermissionNodes);
+                })
+              }
+            )
+          }
+        }
+      }
       if(this.maninfestEditorWin==null){
         const winURL = process.env.NODE_ENV === 'development' ?
       `http://localhost:9080/#xmleditor` :
@@ -1064,10 +1104,10 @@ export default {
           win.setTitle("Manifest.xml编辑器")
         })
         win.webContents.on('did-finish-load', () => {
-            win.webContents.send("update_data",{mainWinId: mainWinId,winId:win.id,data:JSON.stringify(this.originalAPKManafest.rootNode)});
+            win.webContents.send("update_data",{mainWinId: mainWinId,winId:win.id,data:JSON.stringify(this.editorAPKManifest.rootNode)});
         });
         ipc.on("save_manifest",(event,data)=>{
-          console.log("save................................:"+data);
+          this.editorAPKManifest.updateRoot(JSON.parse(data));
         });
         this.maninfestEditorWin=win;
         win.show();
@@ -1116,6 +1156,7 @@ td {
 }
 
 .infoTable {
+  font-size: 12px;
 }
 
 .logDiv {

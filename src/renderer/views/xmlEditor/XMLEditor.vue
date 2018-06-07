@@ -248,49 +248,49 @@ export default {
       let feed = xmlbuilder.create(this.ztreeRawDatas, { encoding: "utf-8" });
       return feed.end({ pretty: true });
     },
-    deepCloneAndTranslate2(root, obj) {
-      if (!(obj instanceof Array)) {
-        if (obj instanceof Object) {
-          let node;
-          if (root instanceof Array) {
-            node = {};
-            root.push(node);
-          } else {
-            node = root;
-          }
-          for (let key in obj) {
-            if (key != "$" && key != "_") {
-              let value = obj[key];
-              if (value instanceof Array) {
-                node[key] = [];
-                this.deepCloneAndTranslate2(node[key], value);
-              } else if (value instanceof Object) {
-                node[key] = {};
-                this.deepCloneAndTranslate2(node[key], value);
-              } else {
-                root[key] = value;
-              }
-            } else if (key === "$") {
-              let rawAtts = obj[key];
-              for (let attKey in rawAtts) {
-                node["@" + attKey] = rawAtts[attKey];
-              }
-            } else if (key === "_") {
-              let value = obj[key];
-              node["#text"] = value;
-            }
-          }
-        } else {
-          if (root instanceof Array) {
-            root.push(obj);
-          }
-        }
-      } else {
-        for (let elem of obj) {
-          this.deepCloneAndTranslate2(root, elem);
-        }
-      }
-    },
+    // deepCloneAndTranslate2(root, obj) {
+    //   if (!(obj instanceof Array)) {
+    //     if (obj instanceof Object) {
+    //       let node;
+    //       if (root instanceof Array) {
+    //         node = {};
+    //         root.push(node);
+    //       } else {
+    //         node = root;
+    //       }
+    //       for (let key in obj) {
+    //         if (key != "$" && key != "_") {
+    //           let value = obj[key];
+    //           if (value instanceof Array) {
+    //             node[key] = [];
+    //             this.deepCloneAndTranslate2(node[key], value);
+    //           } else if (value instanceof Object) {
+    //             node[key] = {};
+    //             this.deepCloneAndTranslate2(node[key], value);
+    //           } else {
+    //             root[key] = value;
+    //           }
+    //         } else if (key === "$") {
+    //           let rawAtts = obj[key];
+    //           for (let attKey in rawAtts) {
+    //             node["@" + attKey] = rawAtts[attKey];
+    //           }
+    //         } else if (key === "_") {
+    //           let value = obj[key];
+    //           node["#text"] = value;
+    //         }
+    //       }
+    //     } else {
+    //       if (root instanceof Array) {
+    //         root.push(obj);
+    //       }
+    //     }
+    //   } else {
+    //     for (let elem of obj) {
+    //       this.deepCloneAndTranslate2(root, elem);
+    //     }
+    //   }
+    // },
     createTreeData(node, nodeData) {
       for (let key in nodeData) {
         let value = nodeData[key];
@@ -366,241 +366,4 @@ export default {
     }
   }
 };
-let xmlStr = `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="com.ourpalm.zhj.zq"
-      android:versionCode="167"
-      android:versionName="1.6.7"
-      android:installLocation="auto">
-
-    <uses-sdk android:minSdkVersion="13" android:targetSdkVersion="18"/>
-    <uses-feature android:glEsVersion="0x00020000" />
-    
-    <supports-screens android:largeScreens="true"
-                      android:smallScreens="true"
-                      android:anyDensity="true"
-                      android:normalScreens="true"/>
-    
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
-    <uses-permission android:name="android.permission.INTERNET"></uses-permission>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission>
-    <uses-permission android:name="android.permission.READ_LOGS"></uses-permission>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"/>
-    <uses-permission android:name="com.android.vending.BILLING"/>
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
-    
-    
-    <!-- Google服务 -->
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    
-    <!-- Push service 运行需要的权限 -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER" />
-    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
-    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
-    <uses-permission android:name="android.permission.GET_TASKS" />
-    
-    <!-- for log. -->
-    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER"/>
-    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />    
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />    
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    
-	<!-- 登录上报时需要带设备名称, 通过蓝牙模块来获取设备名称 -->
-	<uses-permission android:name="android.permission.BLUETOOTH" />
-	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-	<!-- TODO SDK接入 必须权限模块 END -->
-	
-	<!-- 禁止锁屏 -->
-	<uses-permission android:name="android.permission.WAKE_LOCK" />
-	   
-    <application
-        android:name="ourpalm.android.channels.Info.Ourpalm_Channels_Application"
-        android:allowBackup="true"
-        android:persistent="true"
-        android:icon="@drawable/zhj_icon"
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme"
-        android:debuggable="false">
-        <activity
-            android:name="com.ourpalm.zhj.zq.SplashActivity"
-            android:configChanges="locale|fontScale|keyboard|keyboardHidden|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode"
-            android:label="@string/app_name"
-            android:screenOrientation="sensorLandscape"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
-        </activity>
-        <activity
-            android:name="com.ourpalm.zhj.zq.Main"
-            android:label="@string/app_name"
-            android:screenOrientation="sensorLandscape" 
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:launchMode="standard"
-            android:configChanges="orientation|keyboardHidden|navigation|screenSize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-                <data android:scheme="qwalletcom.uwan.wdpt.vivo"/>
-            </intent-filter>
-        </activity>
-        <!-- 客服反馈功能的Activity V3.1.7新增加 --> 
-        <activity  
-          android:name="ourpalm.android.opservice.Ourpalm_OpService_Activity"  
-          android:configChanges="keyboardHidden|orientation|screenSize"  
-          android:theme="@android:style/Theme.Translucent.NoTitleBar" >  
-       </activity>
-        <!-- 游戏自己的启动activity类名，需要完整路径，必须配置 -->
-        <meta-data
-            android:name="ourpalm_class_name"
-            android:value="com.ourpalm.zhj.zq.Main" />
-        <!-- 游戏请配置自己游戏的展示类型，竖屏游戏请配置成 portrait，横屏游戏请配置成landscape -->
-        <meta-data
-            android:name="ourpalm_screenOrientation"
-            android:value="landscape" />
-        <meta-data
-            android:name="ourpalm_gametype_console"
-            android:value="false" />
-        
-       <service 
-            android:name="com.ourpalm.zhj.zq.SendNotifyService"
-            android:persistent="true"
-			android:process="system" >
-       	</service>
-			
-		<!-- push应用定义消息receiver声明 -->
-        <receiver android:name="com.ourpalm.zhj.zq.MyPushMessageReceiver" >
-            <intent-filter>
-                <!-- 接收push消息 -->
-                <action android:name="com.baidu.android.pushservice.action.MESSAGE" />
-                <!-- 接收bind,unbind,fetch,delete等反馈消息 -->
-                <action android:name="com.baidu.android.pushservice.action.RECEIVE" />
-                <action android:name="com.baidu.android.pushservice.action.notification.CLICK" />
-            </intent-filter>
-        </receiver>
-
-        <!-- push必须的receviver和service声明 -->
-        <receiver
-            android:name="com.baidu.android.pushservice.PushServiceReceiver"
-            android:process=":bdservice_v1" >
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-                <action android:name="com.baidu.android.pushservice.action.notification.SHOW" />
-                <action android:name="com.baidu.android.pushservice.action.media.CLICK" />
-                <!-- 以下四项为可选的action声明，可大大提高service存活率和消息到达速度 -->
-                <action android:name="android.intent.action.MEDIA_MOUNTED" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
-                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name="com.baidu.android.pushservice.RegistrationReceiver"
-            android:process=":bdservice_v1" >
-            <intent-filter>
-                <action android:name="com.baidu.android.pushservice.action.METHOD" />
-                <action android:name="com.baidu.android.pushservice.action.BIND_SYNC" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_REMOVED" />
-        		<data android:scheme="package" />
-            </intent-filter>
-        </receiver>
-
-        <service
-            android:name="com.baidu.android.pushservice.PushService"
-            android:exported="true"
-            android:process=":bdservice_v1" >
-            <intent-filter>
-                <action android:name="com.baidu.android.pushservice.action.PUSH_SERVICE" />
-            </intent-filter>
-        </service>
-        <service
-            android:name="com.baidu.android.pushservice.CommandService"
-            android:exported="true" />
-
-        <!-- 4.6.2版本增加一个可选的Activity声明 -->
-        <activity
-            android:launchMode="singleInstance"
-            android:name="com.baidu.android.pushservice.PushKeepAlive"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
-        <!-- 在百度开发者中心查询应用的API Key -->
-        <meta-data
-            android:name="api_key"
-            android:value="o4eNoAVFsScFaOkZsgmISedu" />
-            
-            
-			<!-- 闪屏配置 
-        <activity android:name="ourpalm.android.logo.Ourpalm_LogoScreen_Activity" 
-		    android:configChanges="orientation|keyboardHidden|screenSize|screenLayout"
-			android:theme="@android:style/Theme.NoTitleBar"  
-			android:screenOrientation="landscape" >
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-                <data android:scheme="qwalletcom.uwan.wdpt.vivo"/>
-				
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-        </activity>-->
-		<!-- 闪屏默认配置 -->
-        <meta-data
-            android:name="ourplam_logo_flag"
-            android:value="1" />
-		
-		<!-- 闪屏时间为 2S -->
-        <meta-data
-            android:name="ourplam_logotime"
-            android:value="2000" />    
-         <!-- BASE SDK中上传崩溃日志的服务 V3.2.1版本新增加 -->
-        <service
-            android:name="ourpalm.android.c.Ourpalm_CrashService"
-            android:process=":ourpalmCrash" >
-            <intent-filter>
-                <action android:name="ourpalm.UpCrashLog" />
-            </intent-filter>
-        </service>
-        <service
-            android:name="ourpalm.android.PushServer.Ourpalm_PushServer"
-            android:enabled="true"
-            android:exported="false"
-            android:label="PushService"
-            android:persistent="true"
-            android:process=":ourpalmPushservice" >
-            <intent-filter>
-                <action android:name="Ourpalm_PushServer" />
-
-                <category android:name="android.intent.category.default" />
-            </intent-filter>
-        </service>    
-          <!-- 广播注册 -->
-        <receiver android:name="ourpalm.android.PushServer.Ourpalm_Alarm_BroadcastReceiver" >
-            <intent-filter android:priority="1000" >
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-                <action android:name="ourpalm.pushserver.notice.ourpalm_package_name" />
-            </intent-filter>
-        </receiver>
-
-        <!-- <android:authorities="ourpalm_package_name.AUTH_PUSHID" /> -->
-        <provider
-            android:name="ourpalm.android.push.Ourpalm_PushId_Provider"
-            android:authorities="ourpalm_package_name.AUTH_PUSHID"
-            android:exported="true" />
-           
-    </application>
-	
-</manifest> 
-`;
 </script>

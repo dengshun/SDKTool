@@ -135,4 +135,21 @@ APKManifest.prototype.getAppLabel = function() {
 APKManifest.prototype.updateAppLabel = function(label) {
     this.applicationNode["@android:label"] = label;
 }
+APKManifest.prototype.updateRoot = function(root) {
+    this.rootNode = root;
+    this.applicationNode = this.rootNode["manifest"]["application"][0];
+    this.activityNodes = this.applicationNode["activity"];
+    this.metaDataNodes = this.applicationNode["meta-data"];
+    this.usesPermissionNodes = this.rootNode["manifest"]["uses-permission"];
+}
+APKManifest.prototype.clone = function() {
+    let manifest = new APKManifest();
+    manifest.rootNode = JSON.parse(JSON.stringify(this.rootNode));
+    manifest.applicationNode = manifest.rootNode["manifest"]["application"][0];
+    manifest.activityNodes = manifest.applicationNode["activity"];
+    manifest.metaDataNodes = manifest.applicationNode["meta-data"];
+    manifest.usesPermissionNodes = manifest.rootNode["manifest"]["uses-permission"];
+    return manifest;
+
+}
 export default APKManifest;
