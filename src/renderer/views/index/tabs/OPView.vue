@@ -89,14 +89,14 @@
                 </table>
             </div>
         </div>   
-        <div class="labelDiv">
+        <div v-if="!lockSuperFunc" class="labelDiv">
             <label class="col-sm col-form-label titleLab">
                 安卓平台：高级
             </label>
             <div class="line2">
             </div>
         </div>
-        <div class='infoDiv'>
+        <div v-if="!lockSuperFunc" class='infoDiv'>
             <div class="infoTable">
               <a v-if="originalAPKManifest" href="#" v-on:click="modifyManifestXMLHandler">修改manifest文件</a>
             </div>
@@ -169,6 +169,7 @@ export default {
       misPackage:"",
       misChannelName:"",
       maninfestEditorWin:null,
+      lockSuperFunc:false,
     }
   },
   components: {
