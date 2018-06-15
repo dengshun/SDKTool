@@ -6,6 +6,8 @@ function APKManifest() {
     this.activityNodes = null;
     this.metaDataNodes = null;
     this.usesPermissionNodes = null;
+    this.receiverNodes = null;
+    this.serviceNodes = null;
 }
 APKManifest.prototype.initData = function(obj) {
     this.rootNode = {};
@@ -14,6 +16,8 @@ APKManifest.prototype.initData = function(obj) {
     this.activityNodes = this.applicationNode["activity"];
     this.metaDataNodes = this.applicationNode["meta-data"];
     this.usesPermissionNodes = this.rootNode["manifest"]["uses-permission"];
+    this.receiverNodes = this.applicationNode["receiver"];
+    this.serviceNodes = this.applicationNode["service"];
     // this.applicationNode["@android:name"] = "com.uwan.android.VivoApplication";
     console.log("activityNodes:=========================");
     console.table(this.activityNodes);
@@ -81,10 +85,55 @@ APKManifest.prototype.mergeActivity = function(list) {
         }
     }
 }
+
+APKManifest.prototype.mergeService = function(list) {
+    if (list) {
+        if (!this.serviceNodes) {
+            this.serviceNodes = [];
+            this.applicationNode["service"] = this.serviceNodes;
+        }
+        for (let service of list) {
+            let found = false;
+            for (let existService of this.serviceNodes) {
+                if (existService["@android:name"] === service["@android:name"]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                this.serviceNodes.push(service);
+            }
+        }
+    }
+}
+
+APKManifest.prototype.mergeReceiver = function(list) {
+    if (list) {
+        if (!this.receiverNodes) {
+            this.receiverNodes = [];
+            this.applicationNode["receiver"] = this.receiverNodes;
+        }
+        for (let receiver of list) {
+            let found = false;
+            for (let existReceiver of this.receiverNodes) {
+                if (existReceiver["@android:name"] === receiver["@android:name"]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                this.receiverNodes.push(receiver);
+            }
+        }
+    }
+}
+
+
 APKManifest.prototype.mergeMetaData = function(list) {
     if (list && list.length > 0) {
         if (!this.metaDataNodes) {
             this.metaDataNodes = [];
+            this.applicationNode["meta-data"] = this.metaDataNodes;
         }
         for (let metaData of list) {
             let found = false;

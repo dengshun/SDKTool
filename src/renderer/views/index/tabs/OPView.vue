@@ -827,6 +827,8 @@ export default {
                 this.originalAPKManifest.mergeActivity(sdkManifest.activityNodes);
                 this.originalAPKManifest.mergeMetaData(sdkManifest.metaDataNodes);
                 this.originalAPKManifest.mergePermission(sdkManifest.usesPermissionNodes);
+                this.originalAPKManifest.mergeService(sdkManifest.serviceNodes);
+                this.originalAPKManifest.mergeReceiver(sdkManifest.receiverNodes);
                 fs.outputFile(path.join(global_.workBasePath, "new", "gameClient", "AndroidManifest.xml"), this.originalAPKManifest.makeXMLString(), err => {
                     console.log(err) // => null
                     this.logStr += `合并AndroidManifest.xml完成\n`
@@ -1083,6 +1085,8 @@ export default {
                   this.editorAPKManifest.mergeActivity(sdkManifest.activityNodes);
                   this.editorAPKManifest.mergeMetaData(sdkManifest.metaDataNodes);
                   this.editorAPKManifest.mergePermission(sdkManifest.usesPermissionNodes);
+                  this.editorAPKManifest.mergeService(sdkManifest.serviceNodes);
+                  this.editorAPKManifest.mergeReceiver(sdkManifest.receiverNodes);
             })
           }
         }
